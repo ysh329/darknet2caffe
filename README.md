@@ -27,4 +27,4 @@ python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTOXT CAFFE_CAFFEM
 
 ## TODO
 
-- [] auto shape infer for output dimension of reorg layer
+- [ ] auto shape infer for output dimension of reorg layer
