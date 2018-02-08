@@ -24,3 +24,7 @@ After definination of `shape['dim']` variable, use command below to convert dark
 ```shell
 python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTOXT CAFFE_CAFFEMODEL
 ```
+
+## TODO
+
+- [] auto shape infer for output dimension of reorg layer
