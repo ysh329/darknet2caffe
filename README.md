@@ -4,7 +4,7 @@ This repository ported from [original](https://github.com/marvis/pytorch-caffe-d
 
 ## Step1 Caffe Environment
 
-First, ensure caffe installed, recommanding using Docker image of `bvlc/caffe:cpu` instead.
+First, ensure caffe installed (support Python interface of caffe), recommanding using Docker image of `bvlc/caffe:cpu` instead.
 
 ## Step2 Reorg Layer
 
