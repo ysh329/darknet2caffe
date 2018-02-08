@@ -25,7 +25,7 @@ After definination of `shape['dim']` variable, use command below to convert dark
 python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTOXT CAFFE_CAFFEMODEL
 ```
 
-If messages below shows, it means successful converison:
+If last message below shows, it means successful conversion:
 
 ```shell
 Network initialization done.
