@@ -2,7 +2,7 @@
 
 This repository ported from [original](https://github.com/marvis/pytorch-caffe-darknet-convert) supports conversion from darkent to caffe, especially for YOLOv2 and tiny-YOLO etc. 
 
-## Step1 Caffe Enviroment
+## Step1 Caffe Environment
 
 First, ensure caffe installed, recommanding using Docker image of `bvlc/caffe:cpu` instead.
 
