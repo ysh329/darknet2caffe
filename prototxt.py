@@ -197,8 +197,16 @@ def format_data_layer(protofile):
    
     try:
         import re
-        #model_name = re.findall(model_name_pattern, protofile)[0]
-        model_name = re.findall(model_name_pattern, protofile.replace("/", "-"))[0]
+        # model name
+        proto_name = re.findall(model_name_pattern, protofile)[0]
+        split_list = map(lambda char, idx: (char == "/", idx), proto_name, xrange(len(proto_name)))
+        split_list = filter(lambda (is_split, idx): is_split == True, split_list)
+        if len(split_list) >= 1:
+            split_idx = split_list[-1][1]
+            model_name = proto_name[split_idx+1:]
+        else:
+            model_name = proto_name
+
         dim = [re.findall(dim_pattern, lines[1])[0],
                re.findall(dim_pattern, lines[2])[0],
                re.findall(dim_pattern, lines[3])[0],
