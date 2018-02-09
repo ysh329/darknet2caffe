@@ -386,14 +386,16 @@ def cfg2prototxt(cfgfile):
             reshape_layer = OrderedDict()
             if block.has_key('name'):
                 avg_layer['name'] = block['name']
-                reshape_layer['type'] = 'Reshape'
+                #reshape_layer['type'] = 'Reshape'
+                reshape_layer['type'] = 'Reorg'
                 reshape_layer['bottom'] = bottom
                 avg_layer['top'] = block['name']
             else:
-                reshape_layer['name'] = 'layer%d-reshape' % layer_id
-                reshape_layer['type'] = 'Reshape'
+                reshape_layer['name'] = 'layer%d-reorg' % layer_id
+                #reshape_layer['type'] = 'Reshape'
+                reshape_layer['type'] = 'Reorg'
                 reshape_layer['bottom'] = bottom
-                reshape_layer['top'] = 'layer%d-reshape' % layer_id
+                reshape_layer['top'] = 'layer%d-reorg' % layer_id
             reshape_param = OrderedDict()
             shape = OrderedDict()
 
