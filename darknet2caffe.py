@@ -114,6 +114,7 @@ def cfg2prototxt(cfgfile):
     bottom = 'data'
     layer_id = 1
     topnames = dict()
+
     for bidx in xrange(len(blocks)):
         block = blocks[bidx]
         if block['type'] == 'net':
@@ -381,6 +382,7 @@ def cfg2prototxt(cfgfile):
             topnames[layer_id] = bottom
             layer_id = layer_id+1
         elif block['type'] == 'reorg':
+            print("block reorg bidx: %d" % bidx)
             reshape_layer = OrderedDict()
             if block.has_key('name'):
                 avg_layer['name'] = block['name']
@@ -394,8 +396,67 @@ def cfg2prototxt(cfgfile):
                 reshape_layer['top'] = 'layer%d-reshape' % layer_id
             reshape_param = OrderedDict()
             shape = OrderedDict()
-            # TODO: auto shape infer
-            shape['dim'] = [1, 2048, 9, 9]
+
+            # step1: find former block['route']
+            print("find former block['route'] of block['reorg']")
+            last_block = blocks[bidx-1]
+            if last_block['type'] == "route":
+                from_layers = last_block['layers'].split(',')
+                print("from_layers: " + str(from_layers))
+                if len(from_layers) == 1:
+                    #prev_layer_id = layer_id + int(from_layers[0]) - 1
+                    # start from 1 and 1 is net, not first conv, thus minus 2
+                    prev_layer_id = bidx + int(from_layers[0]) - 1
+                    print("prev_layer_type: %s" % blocks[prev_layer_id]['type'])
+                    print("prev_layer_id:%d" % prev_layer_id)
+                    # step2: store stride from begin to prev_layer_id in stride_list
+                    stride_list = []
+                    reorg_input_filter_num = 0
+                    for bbidx in xrange(len(blocks[:prev_layer_id+1])):
+                        
+                        print(bbidx, blocks[bidx]['type'])
+                        if blocks[bbidx]['type'] == "convolutional" \
+                           or \
+                           blocks[bbidx]['type'] == "maxpool" \
+                           or \
+                           blocks[bbidx]['type'] == "avgpool":
+                            stride = blocks[bbidx]['stride']
+                            stride_list.append(int(stride))
+
+                        # input channels of reorg layer
+                        if blocks[bbidx]['type'] == "convolutional":
+                            reorg_input_filter_num = int(blocks[bbidx]['filters'])
+                    print("stride_list:%s" % str(stride_list))
+                    print("reorg_input_filter_num:%d" % reorg_input_filter_num)
+                    # step3: compute input dimension of reorg layer
+                    stride_factor = reduce(lambda a, b: a*b, stride_list)
+                    print("stride_factor:%d" % stride_factor)
+                    input_h = int(blocks[0]['height'])/stride_factor
+                    input_w = int(blocks[0]['width'])/stride_factor
+
+                    #batch_num = int(blocks[0]['batch'])
+                    batch_num = 1
+                    out_c = reorg_input_filter_num * int(block['stride'])**2
+                    out_h = input_h / int(block['stride'])
+                    out_w = input_w / int(block['stride'])
+                    shape['dim'] = [batch_num, out_c, out_h, out_w]
+                    print(shape['dim']) 
+                else:
+                    printf("reorg layer error: block['route'] before block['reorg'] has two routes")
+                    exit(-1)
+
+            else:
+                printf("reorg layer error: former block of reorg block is not route block")
+                exit(-1)
+            #try:
+            #    shape['dim'][0] = int(raw_input("batch size"))
+            #    shape['dim'][1] = int(raw_input("channels"))
+            #    shape['dim'][2] = int(raw_input("height"))
+            #    shape['dim'][3] = int(raw_input("width"))
+            #except:
+            #    print("error: shape['dim'] must be integer")
+            #    exit(-1)
+                
             #shape['dim'] = [1, -1, block['stride'], block['stride']]
             reshape_param['shape'] = shape
             reshape_layer['reshape_param'] = reshape_param
@@ -424,6 +485,9 @@ def cfg2prototxt(cfgfile):
 
 if __name__ == '__main__':
     import sys
+    print("XXXXXXXXXXXXXXXXXXXXxx", sys.stdout)
+    print("XXXXXXXXXXXXXXXXXXXXxx", sys.stdin)
+    print("XXXXXXXXXXXXXXXXXXXXxx", sys.stderr)
     if len(sys.argv) != 5:
         print('try:')
         print('python darknet2caffe.py tiny-yolo-voc.cfg tiny-yolo-voc.weights tiny-yolo-voc.prototxt tiny-yolo-voc.caffemodel')
