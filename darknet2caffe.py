@@ -120,7 +120,7 @@ def cfg2prototxt(cfgfile):
         if block['type'] == 'net':
             props['name'] = 'Darkent2Caffe'
             props['input'] = 'data'
-            props['input_dim'] = ['1']
+            props['input_dim'] = [block['batch']] #['1']
             props['input_dim'].append(block['channels'])
             props['input_dim'].append(block['height'])
             props['input_dim'].append(block['width'])
@@ -415,10 +415,8 @@ def cfg2prototxt(cfgfile):
                     for bbidx in xrange(len(blocks[:prev_layer_id+1])):
                         
                         print(bbidx, blocks[bidx]['type'])
-                        if blocks[bbidx]['type'] == "convolutional" \
-                           or \
-                           blocks[bbidx]['type'] == "maxpool" \
-                           or \
+                        if blocks[bbidx]['type'] == "convolutional" or \
+                           blocks[bbidx]['type'] == "maxpool" or \
                            blocks[bbidx]['type'] == "avgpool":
                             stride = blocks[bbidx]['stride']
                             stride_list.append(int(stride))
@@ -434,8 +432,8 @@ def cfg2prototxt(cfgfile):
                     input_h = int(blocks[0]['height'])/stride_factor
                     input_w = int(blocks[0]['width'])/stride_factor
 
-                    #batch_num = int(blocks[0]['batch'])
-                    batch_num = 1
+                    batch_num = int(blocks[0]['batch'])
+                    #batch_num = 1
                     out_c = reorg_input_filter_num * int(block['stride'])**2
                     out_h = input_h / int(block['stride'])
                     out_w = input_w / int(block['stride'])
@@ -448,16 +446,7 @@ def cfg2prototxt(cfgfile):
             else:
                 printf("reorg layer error: former block of reorg block is not route block")
                 exit(-1)
-            #try:
-            #    shape['dim'][0] = int(raw_input("batch size"))
-            #    shape['dim'][1] = int(raw_input("channels"))
-            #    shape['dim'][2] = int(raw_input("height"))
-            #    shape['dim'][3] = int(raw_input("width"))
-            #except:
-            #    print("error: shape['dim'] must be integer")
-            #    exit(-1)
                 
-            #shape['dim'] = [1, -1, block['stride'], block['stride']]
             reshape_param['shape'] = shape
             reshape_layer['reshape_param'] = reshape_param
             if DEBUG:
@@ -466,12 +455,12 @@ def cfg2prototxt(cfgfile):
             layers.append(reshape_layer) 
 
             if DEBUG:
-                print("============== reorg =========")
+                print("========== reorg =========")
                 print("reshape['top']: %s" % (reshape_layer['top']))
                 print("layer_id: %s" % layer_id)
                 print("bottom: %s" % bottom)
             bottom = reshape_layer['top']
-            topnames[layer_id] = bottom#reshape_layer['top']
+            topnames[layer_id] = bottom
             layer_id = layer_id + 1
         else:
             print('unknow layer type %s ' % block['type'])
@@ -485,15 +474,9 @@ def cfg2prototxt(cfgfile):
 
 if __name__ == '__main__':
     import sys
-    print("XXXXXXXXXXXXXXXXXXXXxx", sys.stdout)
-    print("XXXXXXXXXXXXXXXXXXXXxx", sys.stdin)
-    print("XXXXXXXXXXXXXXXXXXXXxx", sys.stderr)
     if len(sys.argv) != 5:
-        print('try:')
-        print('python darknet2caffe.py tiny-yolo-voc.cfg tiny-yolo-voc.weights tiny-yolo-voc.prototxt tiny-yolo-voc.caffemodel')
-        print('')
-        print('please add name field for each block to avoid generated name')
-        exit()
+        print('Usage: python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTOXT CAFFE_CAFFEMODEL')
+        exit(-1)
 
     cfgfile = sys.argv[1]
     #net_info = cfg2prototxt(cfgfile)
