@@ -23,6 +23,6 @@ Network initialization done.
 ## TODO
 
 - [x] auto shape infer for output dimension of reorg layer, especially for **one-reorg-layer networks** like YOLOv2.
-- [-] darknet2inferx
-  - [-] support converison of region layer's parameters to variables `*.h` file.
-  - [-] support `yolo_pooling` judge/choose in pooling conversion
+- [ ] darknet2inferx
+   - [ ] support converison of region layer's parameters to variables `*.h` file.
+   - [ ] support `yolo_pooling` judge/choose in pooling conversion
