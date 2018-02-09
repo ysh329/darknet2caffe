@@ -1,4 +1,4 @@
-# Dark2Caffe
+# darknet2inferx
 
 This model convertor ported from [original](https://github.com/marvis/pytorch-caffe-darknet-convert) supports conversion from darkent to caffe, especially for YOLOv2 and tiny-YOLO etc. 
 
@@ -23,3 +23,6 @@ Network initialization done.
 ## TODO
 
 - [x] auto shape infer for output dimension of reorg layer, especially for **one-reorg-layer networks** like YOLOv2.
+- [-] darknet2inferx
+  - [-] support converison of region layer's parameters to variables `*.h` file.
+  - [-] support `yolo_pooling` judge/choose in pooling conversion
