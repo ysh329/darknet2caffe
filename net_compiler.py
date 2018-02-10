@@ -83,8 +83,9 @@ class LayerFactory(object):
                         'Scale', 'Sigmoid', 'Softmax', 'TanH', 'ReLU', 'LRN',
                         'InnerProduct', 'Dropout','Reshape',
                         # darknet layers below
-                        'Reorg', "Region"]
+                        'Reorg',]
 
+    
     def __init__(self, layer_string=None,net_name=None):
         self.layer_string = layer_string
         self.type = None
@@ -107,8 +108,15 @@ class LayerFactory(object):
             exec ('self.layer = %s(self.layer_string,self.net_name)'%self.type)
         else:
             print("Type {} layer is not in layer register".format(self.type))
-            exit(-1)
+            type_pattern = '.*type: "(.*)"\n'
+            try:
+                layer_type = re.findall(type_pattern, self.layer_string)[0]
+                print(layer_type)
+            except:
+                print("Can't find this layer type")
+                exit(-1)
 
+            
 class Layer(object):
     """Layer parent class"""
 
@@ -937,47 +945,6 @@ class Reorg(Layer):
             format(self.batch_size,self.channels,self.height,self.width)
         self.interface_c +=",\"{}\",\"{}\",\"{}\",{},{});".format(self.bottom_layer[0].top,self.top,self.name,Layer.modelstr,Layer.datastr)
 
-class Region(Layer):
-    """Region layer from Darknet, store in *.h file of InferXLite"""
-    #TODO
-    __phases_number = ['dim']
-    
-    def  __init__(self, layer_string,net_name=None):
-         Layer.__init__(self, layer_string,net_name)
-         self.dim= []
-	
-         self.__init_dim__()	
-         self.__list_all_member__()
-
-         self.batch_size = self.dim[0]
-         self.channels = self.dim[1]
-         self.height = self.dim[2]
-         self.width = self.dim[3]
-	
-    def __init_dim__(self):
-        phase_list = self.layer_string.split('dim:')
-        phase_num = len(phase_list)
-        if phase_num == 1:
-            self.__debug_print__("Input layer %s has no input dims" % self.name, printout=True)
-        elif phase_num >= 2:
-            print("phase_num".format(phase_num))
-            print(phase_list[1])
-            for index in range(1, phase_num):
-                self.dim.extend(self.__find_all_num__(phase_list[index]))
-
-    def __calc_ioput__(self):
-        self.num_input = self.bottom_layer[0].num_output
-        self.num_output = self.num_input
-
-    def __interface_c__(self):
-        #TODO
-        self.interface_criterion = \
-            "Region(int batch_size, int channels, int height, int weidth char *bottom, char *top char *name)"
-        self.interface_c = "inferx_reshape("
-        self.interface_c +="{},{},{},{}".\
-            format(self.batch_size,self.channels,self.height,self.width)
-        self.interface_c +=",\"{}\",\"{}\",\"{}\",{},{});".format(self.bottom_layer[0].top,self.top,self.name,Layer.modelstr,Layer.datastr)
-
 
 class Net(object):
     """Convert caffe net protobuf file to inferxlite's *.c and *.h files"""
@@ -990,6 +957,7 @@ class Net(object):
         self.__name = None
         self.__layers_string = None
         self.__layers = []
+        self.non_layer_idx_list = []
         self.__layernum = None
         self.__log = []
         self.__net = ""
@@ -1002,6 +970,7 @@ class Net(object):
         self.__all_layers_type = self.__all_layers_type__()
         self.__write_c_format__(annotation=True)
         self.__write_h_format__(annotation=True)
+        self.__write_non_layer_h_format__()
 
     def __update_log__(self, log, printout=False):
         """Print log from here"""
@@ -1041,9 +1010,14 @@ class Net(object):
         if not self.__loaded:
             self.__update_log__("Net not loaded, please check your net proto file.")
         else:
+            # data input
             if len(self.__layers_string[0].split("dim:")) >= 2:
                 self.__layers.append(LayerFactory(layer_string=self.__layers_string[0],net_name=self.__name).layer)
-            for layer_string in self.__layers_string[1:]:
+            # non-data input
+            for layer_string_idx in xrange(len(self.__layers_string[1:])):
+                layer_string = self.__layers_string[1:][layer_string_idx]
+                # print each layer
+                print(layer_string_idx, layer_string)
                 self.__layers.append(LayerFactory(layer_string=layer_string,net_name=self.__name).layer)
             self.__update_log__("Layers has initialized successfully.")
 
@@ -1051,6 +1025,10 @@ class Net(object):
         if DEBUG: print(len(self.__layers))
         for index_i in range(len(self.__layers)):
             if DEBUG: print(index_i,self.__layers[index_i])
+            if self.__layers[index_i] == None: 
+                self.non_layer_idx_list.append(index_i)
+                del self.__layers[index_i]
+                continue
             if self.__layers[index_i].bottom == None:
                 self.__layers[index_i].__calc_ioput__()
                 self.__layers[index_i].__interface_c__()
@@ -1129,7 +1107,7 @@ class Net(object):
                     lines += "\n"
             if(self.__merge_bn==True and self.__layers[index-1].type == "Convolution" and self.__layers[index].type =="BatchNorm"):
                 continue
-            if(self.__merge_bn==True and self.__layers[index- 2].type == "Convolution" and  self.__layers[index-1].type == "BatchNorm" and self.__layers[index].type =="Scale"):
+            if(self.__merge_bn==True and self.__layers[index-2].type == "Convolution" and self.__layers[index-1].type == "BatchNorm" and self.__layers[index].type =="Scale"):
                 continue
 
             lines += "\t{}\n".format(self.__layers[index].interface_c)
@@ -1144,11 +1122,77 @@ class Net(object):
        
     def __write_h_format__(self, annotation=False):
         outf = open("{}.h".format(self.__name), 'w+')
-        #line = "extern void {};".format(self.__name)
-        line = "extern void {}(char * path, char * model, char * data_c     , void * pdata, void **pout);".format(self.__name)
+        line = "extern void {}(char * path, char * model, char * data_c, void * pdata, void **pout);".format(self.__name)
         outf.writelines(line)
         outf.close()
 
+    def __write_non_layer_h_format__(self):
+        self.__non_layer_register = ["Region"]
+        print('=====================')
+        with open("{}.h".format(self.__name), "w+") as outf:
+
+            def parse_region(layer_str):
+                print("====== parse_region ======")
+
+                anchors_pattern = r'anchors: "(.*)"\n'
+                anchors = re.findall(anchors_pattern, layer_str)[0]
+                anchors_2d_list = map(lambda t: t.split(","), anchors.split(", "))
+                print(anchors)
+
+                classes_pattern = r"classes: (.*)\n"
+                classes = re.findall(classes_pattern, layer_str)[0]
+                print(classes)
+
+                bias_match_pattern = r"bias_match: (.*)\n"
+                bias_match = re.findall(bias_match_pattern, layer_str)[0]
+                print(bias_match)
+
+                coords_pattern = r"coords: (.*)\n"
+                coords = re.findall(coords_pattern, layer_str)[0]
+                print(coords)
+
+                num_pattern = r"num: (.*)\n"
+                num = re.findall(num_pattern, layer_str)[0]
+                print(num)
+
+                softmax_pattern = r"softmax: (.*)\n"
+                softmax = re.findall(softmax_pattern, layer_str)[0]
+                print(softmax)
+               
+                jitter_pattern = r"jitter: (.*)\n"
+                jitter = re.findall(jitter_pattern, layer_str)[0]
+                print(jitter)
+
+                object_scale_pattern = r"object_scale: (.*)\n"
+                object_scale = re.findall(object_scale_pattern, layer_str)[0]
+                print(object_scale)
+
+                thresh_pattern = r"thresh: (.*)\n"
+                thresh = re.findall(thresh_pattern, layer_str)[0]
+                print(thresh)
+
+                region_params_str = ""
+                return region_params_str
+
+            print(self.non_layer_idx_list)
+            for idx in self.non_layer_idx_list:
+                non_layer_str = self.__layers_string[idx+1]
+                print(non_layer_str)
+                try:
+                    type_pattern = '.*type: "(.*)"\n'
+                    layer_type = re.findall(type_pattern, non_layer_str)[0]
+                    print("layer_type:%s" % layer_type)
+                except:
+                    print("can't match layer type, its layer_string:%s" % non_layer_str)
+                    exit(-1)
+                print("--------------------")
+            
+                if layer_type in self.__non_layer_register:
+                    if layer_type == "Region":
+                        parse_region(non_layer_str)
+                    if layer_type == "xxxx":
+                        pass
+                
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
