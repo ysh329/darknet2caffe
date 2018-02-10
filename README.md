@@ -11,7 +11,7 @@ First, ensure caffe installed (**converison progress'll use Python interface of 
 Use following command, convert darknet model to caffe's:
 
 ```shell
-python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTOXT CAFFE_CAFFEMODEL
+python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTXT CAFFE_CAFFEMODEL
 ```
 
 If last message shows as below, it means successful conversion:
@@ -24,5 +24,5 @@ Network initialization done.
 
 - [x] auto shape infer for output dimension of reorg layer, especially for **one-reorg-layer networks** like YOLOv2.
 - [-] darknet2inferx
-  - [-] support converison of region layer's parameters to variables `*.h` file.
+  - [-] support converison of region layer's parameters to variables in `*.h` file.
   - [-] support `yolo_pooling` judge/choose in pooling conversion
