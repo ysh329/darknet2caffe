@@ -954,7 +954,10 @@ class Net(object):
         self.__proto = proto
 	
         self.__merge_bn=False
+        # this name from model ile name, special charactors removed
         self.__name = None
+        # file name, used to save *.c, *.h files
+        self.__file_name = proto.replace(".prototxt", "")
         self.__layers_string = None
         self.__layers = []
         self.non_layer_idx_list = []
@@ -1065,7 +1068,7 @@ class Net(object):
         self.__update_line__(line, self.__cfile)
 
     def __write_c_format__(self, annotation=False):
-        outf = open("{}.c".format(self.__name), 'w+')
+        outf = open("{}.c".format(self.__file_name), 'w+')
         if annotation:
             self.__write_annotations__()
         lines = "#include \"inferxlite_common.h\"\n"
@@ -1123,7 +1126,7 @@ class Net(object):
         outf.close()
        
     def __write_h_format__(self, annotation=False):
-        outf = open("{}.h".format(self.__name), 'w+')
+        outf = open("{}.h".format(self.__file_name), 'w+')
         line = "extern void {}(char * path, char * model, char * data_c, void * pdata, void **pout);".format(self.__name)
         outf.writelines(line)
         outf.close()
@@ -1154,7 +1157,7 @@ class Net(object):
         # add input shape, etc variables
         input_shape_c_code_str = parse_network_input(self.__proto)
         h_file_line_list.append(input_shape_c_code_str)
-        with open("{}.h".format(self.__name), "a") as h_file_handle:
+        with open("{}.h".format(self.__file_name), "a") as h_file_handle:
             h_file_handle.writelines(h_file_line_list)
 
 
