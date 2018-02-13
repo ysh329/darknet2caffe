@@ -17,7 +17,7 @@ import sys
 
 from abc import abstractmethod
 
-DEBUG=True
+DEBUG = False
 
 def cformatparam(string_param):
     cformat = ""
@@ -107,11 +107,11 @@ class LayerFactory(object):
         if self.type in self.__layer_register:
             exec ('self.layer = %s(self.layer_string,self.net_name)'%self.type)
         else:
-            print("Type {} layer is not in layer register".format(self.type))
+            print("[WARN] Type {} layer is not in layer register".format(self.type))
             type_pattern = '.*type: "(.*)"\n'
             try:
                 layer_type = re.findall(type_pattern, self.layer_string)[0]
-                print(layer_type)
+                if DEBUG: print(layer_type)
             except:
                 print("Can't find this layer type")
                 exit(-1)
@@ -888,8 +888,8 @@ class Reshape(Layer):
         if phase_num == 1:
             self.__debug_print__("Input layer %s has no input dims" % self.name, printout=True)
         elif phase_num >= 2:
-            print("phase_num".format(phase_num))
-            print(phase_list[1])
+            if DEBUG: print("phase_num".format(phase_num))
+            if DEBUG: print(phase_list[1])
             for index in range(1, phase_num):
                 self.dim.extend(self.__find_all_num__(phase_list[index]))
 
@@ -928,8 +928,8 @@ class Reorg(Layer):
         if phase_num == 1:
             self.__debug_print__("Input layer %s has no input dims" % self.name, printout=True)
         elif phase_num >= 2:
-            print("phase_num".format(phase_num))
-            print(phase_list[1])
+            if DEBUG: print("phase_num".format(phase_num))
+            if DEBUG: print(phase_list[1])
             for index in range(1, phase_num):
                 self.dim.extend(self.__find_all_num__(phase_list[index]))
 
@@ -1017,7 +1017,7 @@ class Net(object):
             for layer_string_idx in xrange(len(self.__layers_string[1:])):
                 layer_string = self.__layers_string[1:][layer_string_idx]
                 # print each layer
-                print(layer_string_idx, layer_string)
+                #print(layer_string_idx, layer_string)
                 self.__layers.append(LayerFactory(layer_string=layer_string,net_name=self.__name).layer)
             self.__update_log__("Layers has initialized successfully.")
 
@@ -1137,7 +1137,7 @@ class Net(object):
             try:
                 type_pattern = '.*type: "(.*)"\n'
                 layer_type = re.findall(type_pattern, non_layer_str)[0]
-                print("layer_type:%s" % layer_type)
+                if DEBUG: print("layer_type:%s" % layer_type)
             except:
                 print("can't match layer type, its layer_string:%s" % non_layer_str)
                 exit(-1)
@@ -1366,3 +1366,5 @@ if __name__ == "__main__":
     else:
         prototxt_file = sys.argv[1]
         net = Net(prototxt_file)
+        print("Successful conversion from {}.prototxt to {}.c and {}.h" \
+              .format(self.__name, self.__name, self.__name))
