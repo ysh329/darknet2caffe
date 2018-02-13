@@ -3,9 +3,9 @@ from caffe_compiler import *
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        python_str = "python3"
+        python_str = "python"
         this_pyfile_path = sys.argv[0]
-        print("[USAGE] %s %s CAFFE_PROTOTXT CAFFE_CAFFEMODEL\n" % (python_str, this_pyfile_path))
+        print("Usage: %s %s CAFFE_PROTOTXT CAFFE_CAFFEMODEL\n" % (python_str, this_pyfile_path))
         exit(-1)
     else:
         # net_compiler

@@ -26,6 +26,16 @@ Next is conversion from caffe to InferXLite:
 python caffe2inferx.py CAFFE_PROTOTXT CAFFE_CAFFEMODEL
 ```
 
+## Appendix
+
+Translate to InferXLite directly from caffe:
+
+```shell
+python darknet2inferx.py DARKNET_CFG DARKNET_WEIGHTS
+```
+
+The exectuion log will be saved in `darknet2caffe_convert.log`.
+
 ## TODO
 
 - [x] auto shape infer for output dimension of reorg layer from darknet to caffe, especially for **one-reorg-layer networks** like YOLOv2.
