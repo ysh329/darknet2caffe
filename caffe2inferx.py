@@ -21,4 +21,4 @@ if __name__ == "__main__":
         caffe_model_path = sys.argv[2]
         main(caffe_model_path)
         print("[INFO] Successful conversion from {}.caffemodel to {}.dat" \
-              .format(name))
+              .format(name, name))

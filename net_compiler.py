@@ -1150,6 +1150,10 @@ class Net(object):
                 # For other non-layers support
                 if layer_type == "xxxx":
                     pass
+
+        # add input shape, etc variables
+        input_shape_c_code_str = parse_network_input(self.__proto)
+        h_file_line_list.append(input_shape_c_code_str)
         with open("{}.h".format(self.__name), "a") as h_file_handle:
             h_file_handle.writelines(h_file_line_list)
 
@@ -1195,6 +1199,21 @@ def var_from_py_to_c(var, var_name, var_len=1):
     c_str_list = [" "*0, var_type, " ", var_name, " = ", str(var), ";"]
     c_str = "".join(map(str, c_str_list))
     return(c_str)
+
+
+def parse_network_input(prototxt_file):
+    dim_pattern = r"dim: (.*)\n"
+    with open(prototxt_file) as prototxt_handle:
+        prototxt_content = prototxt_handle.read()
+        dim_list = re.findall(dim_pattern, prototxt_content)
+        dim_list = map(int, dim_list)
+
+        var_name_list = ["input_batch_size", "input_channel", "input_height", "input_width"]
+        dim_c_code_line_list = map(lambda var, var_name: \
+                                          var_from_py_to_c(var, var_name), \
+                                   dim_list[:len(var_name_list)], var_name_list)
+        dim_c_code_str = "\n"*2 + "\n".join(dim_c_code_line_list)
+    return dim_c_code_str
         
     
 def parse_region(layer_str, var_name_prefix="region", var_name_prefix_pattern=r'parse_(.*)'):
@@ -1203,12 +1222,15 @@ def parse_region(layer_str, var_name_prefix="region", var_name_prefix_pattern=r'
     var_name_prefix = re.findall(var_name_prefix_pattern, parse_region.func_name)[0]
     var_name_generator = lambda prefix, name: "_".join([prefix, name])
     # =======================================
-    # 15 parameters
+    # 20 parameters
     #    1-4: anchors, bias_match, classes, coords
     #    5-8: num, softmax, jitter, rescore 
     #   9-12: object_scale, noobject_scale, 
     #         class_scale, coord_scale
-    #  13-15: absolute, thresh, random
+    #  13-16: absolute, thresh, 
+    #         random, nms_thresh
+    #  17-20: tree_thresh, background, 
+    #         relative, box_thresh
     # ======================================
     # 1: anchors
     anchors_pattern = r'anchors: "(.*)"\n'
