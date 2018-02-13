@@ -120,7 +120,8 @@ def cfg2prototxt(cfgfile):
         if block['type'] == 'net':
             props['name'] = 'Darkent2Caffe'
             props['input'] = 'data'
-            props['input_dim'] = [block['batch']] #['1']
+            #props['input_dim'] = [block['batch']] #['1']
+            props['input_dim'] = ['1']
             props['input_dim'].append(block['channels'])
             props['input_dim'].append(block['height'])
             props['input_dim'].append(block['width'])
@@ -410,6 +411,14 @@ def cfg2prototxt(cfgfile):
             # step1: find former block['route']
             print("find former block['route'] of block['reorg']")
             last_block = blocks[bidx-1]
+            block_n_idx_tuple_list = map(lambda b, idx: \
+                                            (b['type'], idx), \
+                                          blocks, xrange(len(blocks)))
+            route_tuple_list = filter(lambda t: \
+                                         t[0] == "route",\
+                                      block_n_idx_tuple_list)
+            last_block_idx = route_tuple_list[0][1]
+            last_block = blocks[last_block_idx]
             if last_block['type'] == "route":
                 from_layers = last_block['layers'].split(',')
                 print("from_layers: " + str(from_layers))
@@ -422,8 +431,9 @@ def cfg2prototxt(cfgfile):
                     # step2: store stride from begin to prev_layer_id in stride_list
                     stride_list = []
                     reorg_input_filter_num = 0
+                    #for bbidx in xrange(len(blocks[:prev_layer_id+1])):
                     for bbidx in xrange(len(blocks[:prev_layer_id+1])):
-                        
+  
                         print(bbidx, blocks[bidx]['type'])
                         if blocks[bbidx]['type'] == "convolutional" or \
                            blocks[bbidx]['type'] == "maxpool" or \
@@ -442,19 +452,19 @@ def cfg2prototxt(cfgfile):
                     input_h = int(blocks[0]['height'])/stride_factor
                     input_w = int(blocks[0]['width'])/stride_factor
 
-                    batch_num = int(blocks[0]['batch'])
-                    #batch_num = 1
+                    #batch_num = int(blocks[0]['batch'])
+                    batch_num = 1
                     out_c = reorg_input_filter_num * int(block['stride'])**2
                     out_h = input_h / int(block['stride'])
                     out_w = input_w / int(block['stride'])
                     shape['dim'] = [batch_num, out_c, out_h, out_w]
                     print(shape['dim']) 
                 else:
-                    printf("reorg layer error: block['route'] before block['reorg'] has two routes")
+                    print("reorg layer error: block['route'] before block['reorg'] has two routes")
                     exit(-1)
 
             else:
-                printf("reorg layer error: former block of reorg block is not route block")
+                print("reorg layer error: former block of reorg block is not route block")
                 exit(-1)
                 
             reshape_param['shape'] = shape
