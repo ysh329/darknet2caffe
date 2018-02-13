@@ -28,7 +28,7 @@ python caffe2inferx.py CAFFE_PROTOTXT CAFFE_CAFFEMODEL
 
 ## Appendix
 
-Translate to InferXLite directly from caffe:
+Translate to InferXLite directly from darknet:
 
 ```shell
 python darknet2inferx.py DARKNET_CFG DARKNET_WEIGHTS
