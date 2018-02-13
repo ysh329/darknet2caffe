@@ -29,7 +29,6 @@ def read_caffemodel(src_file):
     import re
     model_name_pattern = "(.*).caffemodel"
     model_name = re.findall(model_name_pattern, src_file)[0]
-    model_name = ".".join([model_name, "dat"])
     save_caffemodel_data(layermodel, model_name)
 
 def get_shape_data(blobs):
