@@ -269,6 +269,14 @@ def cfg2prototxt(cfgfile):
                 region_param['thresh'] = block['thresh']
                 region_param['random'] = block['random']
 
+                # other hyper-parameters not int cfg file
+                region_param['nms_thresh'] = 0.3
+                region_param['background'] = 0
+                region_param['tree_thresh'] = 0.5
+                region_param['relative'] = 1
+                region_param['box_thresh'] = 0.24
+
+
             region_layer['region_param'] = region_param
             layers.append(region_layer)
             bottom = region_layer['top']
@@ -386,14 +394,14 @@ def cfg2prototxt(cfgfile):
             reshape_layer = OrderedDict()
             if block.has_key('name'):
                 avg_layer['name'] = block['name']
-                #reshape_layer['type'] = 'Reshape'
-                reshape_layer['type'] = 'Reorg'
+                reshape_layer['type'] = 'Reshape'
+                #reshape_layer['type'] = 'Reorg'
                 reshape_layer['bottom'] = bottom
                 avg_layer['top'] = block['name']
             else:
                 reshape_layer['name'] = 'layer%d-reorg' % layer_id
-                #reshape_layer['type'] = 'Reshape'
-                reshape_layer['type'] = 'Reorg'
+                reshape_layer['type'] = 'Reshape'
+                #reshape_layer['type'] = 'Reorg'
                 reshape_layer['bottom'] = bottom
                 reshape_layer['top'] = 'layer%d-reorg' % layer_id
             reshape_param = OrderedDict()

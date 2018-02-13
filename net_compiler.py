@@ -1111,8 +1111,10 @@ class Net(object):
                 continue
 
             lines += "\t{}\n".format(self.__layers[index].interface_c)
-        lines += "\n\tinferx_sort_data(\"{}\",{});\n".format(self.__layers[-1].top,"data")
-        lines += "\tinferx_print_data(\"{}\",{});\n".format(self.__layers[-1].top,"data")
+
+        lines += "\n\t//DEBUG mode\n"
+        lines += "\t//inferx_sort_data(\"{}\",{});\n".format(self.__layers[-1].top,"data")
+        lines += "\t//inferx_print_data(\"{}\",{});\n".format(self.__layers[-1].top,"data")
         #lines += "\tsaveData(\"{}\");\n\n".format(self.__layers[-1].top)
         lines += "\tinferx_finalize(\"{}\");\n".format(self.__name)
         lines += "\n\treturn;\n}"
@@ -1128,70 +1130,231 @@ class Net(object):
 
     def __write_non_layer_h_format__(self):
         self.__non_layer_register = ["Region"]
-        print('=====================')
-        with open("{}.h".format(self.__name), "w+") as outf:
-
-            def parse_region(layer_str):
-                print("====== parse_region ======")
-
-                anchors_pattern = r'anchors: "(.*)"\n'
-                anchors = re.findall(anchors_pattern, layer_str)[0]
-                anchors_2d_list = map(lambda t: t.split(","), anchors.split(", "))
-                print(anchors)
-
-                classes_pattern = r"classes: (.*)\n"
-                classes = re.findall(classes_pattern, layer_str)[0]
-                print(classes)
-
-                bias_match_pattern = r"bias_match: (.*)\n"
-                bias_match = re.findall(bias_match_pattern, layer_str)[0]
-                print(bias_match)
-
-                coords_pattern = r"coords: (.*)\n"
-                coords = re.findall(coords_pattern, layer_str)[0]
-                print(coords)
-
-                num_pattern = r"num: (.*)\n"
-                num = re.findall(num_pattern, layer_str)[0]
-                print(num)
-
-                softmax_pattern = r"softmax: (.*)\n"
-                softmax = re.findall(softmax_pattern, layer_str)[0]
-                print(softmax)
-               
-                jitter_pattern = r"jitter: (.*)\n"
-                jitter = re.findall(jitter_pattern, layer_str)[0]
-                print(jitter)
-
-                object_scale_pattern = r"object_scale: (.*)\n"
-                object_scale = re.findall(object_scale_pattern, layer_str)[0]
-                print(object_scale)
-
-                thresh_pattern = r"thresh: (.*)\n"
-                thresh = re.findall(thresh_pattern, layer_str)[0]
-                print(thresh)
-
-                region_params_str = ""
-                return region_params_str
-
-            print(self.non_layer_idx_list)
-            for idx in self.non_layer_idx_list:
-                non_layer_str = self.__layers_string[idx+1]
-                print(non_layer_str)
-                try:
-                    type_pattern = '.*type: "(.*)"\n'
-                    layer_type = re.findall(type_pattern, non_layer_str)[0]
-                    print("layer_type:%s" % layer_type)
-                except:
-                    print("can't match layer type, its layer_string:%s" % non_layer_str)
-                    exit(-1)
-                print("--------------------")
+        h_file_line_list = []
+        # start loop from non-layer-idx
+        for idx in self.non_layer_idx_list:
+            non_layer_str = self.__layers_string[idx+1]
+            try:
+                type_pattern = '.*type: "(.*)"\n'
+                layer_type = re.findall(type_pattern, non_layer_str)[0]
+                print("layer_type:%s" % layer_type)
+            except:
+                print("can't match layer type, its layer_string:%s" % non_layer_str)
+                exit(-1)
             
-                if layer_type in self.__non_layer_register:
-                    if layer_type == "Region":
-                        parse_region(non_layer_str)
-                    if layer_type == "xxxx":
-                        pass
+            if layer_type in self.__non_layer_register:
+                if layer_type == "Region":
+                    region_c_code_line_list = parse_region(non_layer_str)
+                    region_c_code_str = "\n\n" + "\n".join(region_c_code_line_list)
+                    h_file_line_list.append(region_c_code_str)
+                # For other non-layers support
+                if layer_type == "xxxx":
+                    pass
+        with open("{}.h".format(self.__name), "a") as h_file_handle:
+            h_file_handle.writelines(h_file_line_list)
+
+
+def var_from_py_to_c(var, var_name, var_len=1):
+    if var_len == 1:
+        if type(var) == str:
+            var_type = "char *"
+        elif type(var) == int:
+            var_type = "int"
+        elif type(var) == float:
+            var_type = "float"
+        else:
+            print("don't support type for variable %s" % var_name)
+            exit(-1)
+    else: # var_len > 1
+        if type(var) == list or \
+           type(var) == tuple:
+            if type(var[0]) == float:
+                var_type = "float"
+            elif type(var[0]) == int:
+                var_type = "int"
+            elif type(var[0]) == str:
+                var_type = "char *"
+            else:
+                print("don't support type for variable %s" % var_name)
+                exit(-1)
+
+            # reduce dimension to 1
+            var = eval('[%s]' % repr(var) \
+                       .replace("(),", "") \
+                       .replace("[],","") \
+                       .replace('[', '') \
+                       .replace("(", "") \
+                       .replace(']', '') \
+                       .replace(")", ""))
+            var = map(str, var)
+            var = "".join(["{", ", ".join(var), "}"])
+            var_name = "".join([var_name, "[", str(var_len), "]"])
+        else:
+            print("don't support type for variable %s" % var_name)
+            exit(-1)
+    c_str_list = [" "*0, var_type, " ", var_name, " = ", str(var), ";"]
+    c_str = "".join(map(str, c_str_list))
+    return(c_str)
+        
+    
+def parse_region(layer_str, var_name_prefix="region", var_name_prefix_pattern=r'parse_(.*)'):
+    c_code_line_list = []
+                
+    var_name_prefix = re.findall(var_name_prefix_pattern, parse_region.func_name)[0]
+    var_name_generator = lambda prefix, name: "_".join([prefix, name])
+    # =======================================
+    # 15 parameters
+    #    1-4: anchors, bias_match, classes, coords
+    #    5-8: num, softmax, jitter, rescore 
+    #   9-12: object_scale, noobject_scale, 
+    #         class_scale, coord_scale
+    #  13-15: absolute, thresh, random
+    # ======================================
+    # 1: anchors
+    anchors_pattern = r'anchors: "(.*)"\n'
+    anchors = re.findall(anchors_pattern, layer_str)[0]
+    anchors_2d_list = map(lambda t: t.split(","), anchors.split(", "))
+    anchors = sum(anchors_2d_list, [])
+    anchors = map(float, anchors)
+    var_name = var_name_generator(var_name_prefix, "anchors")
+    c_code_str = var_from_py_to_c(anchors, var_name, len(anchors))
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 2: bias_match
+    bias_match_pattern = r"bias_match: (.*)\n"
+    bias_match = int(re.findall(bias_match_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "bias_match")
+    c_code_str = var_from_py_to_c(bias_match, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 3: classes
+    classes_pattern = r"classes: (.*)\n"
+    classes = int(re.findall(classes_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "classes")
+    c_code_str = var_from_py_to_c(classes, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 4: coords
+    coords_pattern = r"coords: (.*)\n"
+    coords = int(re.findall(coords_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "coords")
+    c_code_str = var_from_py_to_c(coords, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 5: num
+    num_pattern = r"num: (.*)\n"
+    num = int(re.findall(num_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "num")
+    c_code_str = var_from_py_to_c(num, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 6: softmax
+    softmax_pattern = r"softmax: (.*)\n"
+    softmax = int(re.findall(softmax_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "softmax")
+    c_code_str = var_from_py_to_c(softmax, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 7: jitter
+    jitter_pattern = r"jitter: (.*)\n"
+    jitter = float(re.findall(jitter_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "jitter")
+    c_code_str = var_from_py_to_c(jitter, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 8: rescore
+    rescore_pattern = r"rescore: (.*)\n"
+    rescore = int(re.findall(rescore_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "rescore")
+    c_code_str = var_from_py_to_c(rescore, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 9: object_scale
+    object_scale_pattern = r"object_scale: (.*)\n"
+    object_scale = int(re.findall(object_scale_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "object_scale")
+    c_code_str = var_from_py_to_c(object_scale, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 10: noobject_scale
+    noobject_scale_pattern = r"noobject_scale: (.*)\n"
+    noobject_scale = int(re.findall(noobject_scale_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "noobject_scale")
+    c_code_str = var_from_py_to_c(noobject_scale, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 11: class_scale
+    class_scale_pattern = r"class_scale: (.*)\n"
+    class_scale = int(re.findall(class_scale_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "class_scale")
+    c_code_str = var_from_py_to_c(class_scale, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 12: coords_scale
+    coord_scale_pattern = r"coord_scale: (.*)\n"
+    coord_scale = int(re.findall(coord_scale_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "coord_scale")
+    c_code_str = var_from_py_to_c(coord_scale, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 13: absolute
+    absolute_pattern = r"absolute: (.*)\n"
+    absolute = int(re.findall(absolute_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "absolute")
+    c_code_str = var_from_py_to_c(absolute, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 14: thresh
+    thresh_pattern = r"thresh: (.*)\n"
+    thresh = float(re.findall(thresh_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "thresh")
+    c_code_str = var_from_py_to_c(thresh, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 15: random
+    random_pattern = r"random: (.*)\n"
+    random = float(re.findall(random_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "random")
+    c_code_str = var_from_py_to_c(random, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 16: nms_thresh
+    nms_thresh_pattern = r"nms_thresh: (.*)\n"
+    nms_thresh = float(re.findall(nms_thresh_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "nms_thresh")
+    c_code_str = var_from_py_to_c(nms_thresh, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 17: background
+    background_pattern = r"background: (.*)\n"
+    background = int(re.findall(background_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "background")
+    c_code_str = var_from_py_to_c(background, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 18: tree_thresh
+    tree_thresh_pattern = r"tree_thresh: (.*)\n"
+    tree_thresh = float(re.findall(tree_thresh_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "tree_thresh")
+    c_code_str = var_from_py_to_c(tree_thresh, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 19: relative
+    relative_pattern = r"relative: (.*)\n"
+    relative = int(re.findall(relative_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "relative")
+    c_code_str = var_from_py_to_c(relative, var_name)
+    c_code_line_list.append(c_code_str)
+    # ======================================
+    # 20: box_thresh
+    box_thresh_pattern = r"box_thresh: (.*)\n"
+    box_thresh = float(re.findall(box_thresh_pattern, layer_str)[0])
+    var_name = var_name_generator(var_name_prefix, "box_thresh")
+    c_code_str = var_from_py_to_c(box_thresh, var_name)
+    c_code_line_list.append(c_code_str)
+
+    return c_code_line_list
+
                 
 
 if __name__ == "__main__":
