@@ -47,4 +47,6 @@ python cfg.py DARKNET_CFG
 - [x] auto shape infer for output dimension of reorg layer from darknet to caffe, especially for **one-reorg-layer networks** like YOLOv2.
 - [x] darknet2inferx
    - [x] support converison of region layer's parameters to variables in `*.h` file.
-   - [ ] support `yolo_pooling` judge/choose in pooling conversion[DELAY]
+   - [ ] support `yolo_pooling` judge/choose in pooling conversion from caffe to inferxlite [DELAY]
+- [ ] darknet2caffe
+   - [ ] support conversion of **pooling layer** for special cases (stride=1 pooling, decimal value)
