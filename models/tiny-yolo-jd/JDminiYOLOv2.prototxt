@@ -374,7 +374,7 @@ layer {
     reshape_param {
         shape {
             dim: 1
-            dim: 1024
+            dim: 256
             dim: 15
             dim: 20
         }
