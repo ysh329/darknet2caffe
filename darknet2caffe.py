@@ -407,7 +407,7 @@ def cfg2prototxt(cfgfile):
                 reshape_layer['top'] = 'layer%d-reorg' % layer_id
             reshape_param = OrderedDict()
             shape = OrderedDict()
-
+            # TODO
             # step1: find former block['route']
             print("find former block['route'] of block['reorg']")
             last_block = blocks[bidx-1]
@@ -494,8 +494,8 @@ def cfg2prototxt(cfgfile):
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) != 5:
-        print('Usage: python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTOXT CAFFE_CAFFEMODEL')
+    if len(sys.argv) != 3:
+        print('Usage: python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS')
         exit(-1)
 
     cfgfile = sys.argv[1]
@@ -503,7 +503,9 @@ if __name__ == '__main__':
     #print_prototxt(net_info)
     #save_prototxt(net_info, 'tmp.prototxt')
     weightfile = sys.argv[2]
-    protofile = sys.argv[3]
-    caffemodel = sys.argv[4]
+    name = cfgfile.replace(".cfg", "")
+    protofile = ".".join([name, "prototxt"])
+    caffemodel = ".".join([name, "caffemodel"])
+
     darknet2caffe(cfgfile, weightfile, protofile, caffemodel)
     format_data_layer(protofile)

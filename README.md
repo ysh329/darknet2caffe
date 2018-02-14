@@ -11,7 +11,7 @@ First, ensure caffe installed (**converison progress'll use Python interface of 
 Use following command, convert darknet model to caffe's:
 
 ```shell
-python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS CAFFE_PROTOTXT CAFFE_CAFFEMODEL
+python darknet2caffe.py DARKNET_CFG DARKNET_WEIGHTS
 ```
 
 If last message shows as below, it means successful conversion from darknet to caffe:
