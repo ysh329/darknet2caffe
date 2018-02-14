@@ -34,7 +34,13 @@ Translate to InferXLite directly from darknet:
 python darknet2inferx.py DARKNET_CFG DARKNET_WEIGHTS
 ```
 
-The exectuion log will be saved in `darknet2caffe_convert.log`.
+Check exectuion log in `darknet2caffe_convert.log`.
+
+Translate `*.cfg` file to `*.prototxt` only:
+
+```shell
+python cfg.py DARKNET_CFG
+```
 
 ## TODO
 
