@@ -375,8 +375,8 @@ layer {
         shape {
             dim: 1
             dim: 256
-            dim: 7
-            dim: 10
+            dim: 15
+            dim: 20
         }
     }
 }
