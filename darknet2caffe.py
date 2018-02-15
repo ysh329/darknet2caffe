@@ -407,46 +407,97 @@ def cfg2prototxt(cfgfile):
                 reshape_layer['top'] = 'layer%d-reorg' % layer_id
             reshape_param = OrderedDict()
             shape = OrderedDict()
-            # TODO
-            # step1: find former block['route']
-            print("find former block['route'] of block['reorg']")
-            last_block = blocks[bidx-1]
+            # TODO CHECK YOLOv2
+            # step1: find fisrt block['type'] == 'route'
+            print("[step1] find first block['type'] == 'route'")
             block_n_idx_tuple_list = map(lambda b, idx: \
                                             (b['type'], idx), \
                                           blocks, xrange(len(blocks)))
             route_tuple_list = filter(lambda t: \
                                          t[0] == "route",\
                                       block_n_idx_tuple_list)
-            last_block_idx = route_tuple_list[0][1]
-            last_block = blocks[last_block_idx]
-            if last_block['type'] == "route":
-                from_layers = last_block['layers'].split(',')
-                print("from_layers: " + str(from_layers))
-                if len(from_layers) == 1:
-                    #prev_layer_id = layer_id + int(from_layers[0]) - 1
+            first_route_idx = route_tuple_list[0][1]
+            first_route_block = blocks[first_route_idx]
+            if first_route_block['type'] == "route":
+                first_route_from_layers_list = first_route_block['layers'].split(',')
+                print("first_route_from_layers_list: " + str(first_route_from_layers_list))
+                if len(first_route_from_layers_list) == 1:
                     # start from 1 and 1 is net, not first conv, thus minus 2
-                    prev_layer_id = bidx + int(from_layers[0]) - 1
-                    print("prev_layer_type: %s" % blocks[prev_layer_id]['type'])
-                    print("prev_layer_id:%d" % prev_layer_id)
+                    first_route_from_layers_idx = first_route_idx + int(first_route_from_layers_list[0]) - 0
+                    print("blocks[first_route_from_layers_idx]['type']: %s" % blocks[first_route_from_layers_idx]['type'])
+                    print("first_route_from_layers_idx:%d" % first_route_from_layers_idx)
+                    print("blocks[first_route_from_layers_idx]:%s" % str(blocks[first_route_from_layers_idx]))
+                    #print("blocks[14]:%s" % str(blocks[14]))
+
                     # step2: store stride from begin to prev_layer_id in stride_list
+                    print("[step2] store stride from begin to prev_layer_id in stride_list")
                     stride_list = []
                     reorg_input_filter_num = 0
+                    second_route_idx = route_tuple_list[1][1]
+                    second_route_block = blocks[second_route_idx]
+                    print("second_route_idx:%s" % str(second_route_idx))
+                    second_route_from_layers_list = second_route_block['layers'].split(',')
+                    print("second_route_from_layers_list:%s" % str(second_route_from_layers_list))
+                    second_route_from_layers_idx_list = map(lambda ind_str: 
+                                                                   second_route_idx + int(ind_str) - 0,
+                                                            second_route_from_layers_list)
+                    print("second_route_from_layers_idx_list:%s" % str(second_route_from_layers_idx_list))
                     #for bbidx in xrange(len(blocks[:prev_layer_id+1])):
-                    for bbidx in xrange(len(blocks[:prev_layer_id+1])):
-  
-                        print(bbidx, blocks[bidx]['type'])
-                        if blocks[bbidx]['type'] == "convolutional" or \
-                           blocks[bbidx]['type'] == "maxpool" or \
-                           blocks[bbidx]['type'] == "avgpool":
-                            stride = blocks[bbidx]['stride']
+                    #                                     right=13(second_route[0])======reorg bidx
+                    # ====master branch===9(last, not first_route, but first_route[0])
+                    # TODO                                left=10(second_route[1])=======
+                    master_branch_end_bidx = first_route_from_layers_idx
+                    right_branch_only_start_bidx = first_route_idx
+                    reorg_bidx = bidx
+                    right_branch_only_end_bidx = reorg_bidx
+                    print("\n========== key bidx check =========")
+                    print("reorg bidx:%s" % bidx)
+                    print("first route idx:%s" % first_route_idx)
+                    print("second route idx:%s" % second_route_idx)
+                    print("master_branch_end_bidx: %s" % master_branch_end_bidx)
+                    print("str(blocks[master_branch_end_bidx]): %s" % str(blocks[master_branch_end_bidx]))
+
+                    print
+                    print("right_branch_only_start_bidx:%s" % right_branch_only_start_bidx)
+                    print("str(blocks[right_branch_only_start_bidx]): %s" % str(blocks[right_branch_only_start_bidx]))
+
+                    print
+                    print("right_branch_only_end_bidx: %s" % right_branch_only_end_bidx)
+                    print("str(blocks[right_branch_only_end_bidx]): %s" % str(blocks[right_branch_only_end_bidx]))
+                    print("=====================================\n")
+
+                    # include last block, so +1 for python index
+                    master_branch_blocks = blocks[:master_branch_end_bidx+1]
+                    right_branch_blocks_only_before_reorg = blocks[right_branch_only_start_bidx:right_branch_only_end_bidx+1]
+                    # check master branch and right branch
+                    print("\n=============== check master branch =================")
+                    for mbidx in xrange(len(master_branch_blocks)): 
+                        master_block = master_branch_blocks[mbidx]
+                        print("%d\t%s" % (mbidx, str(master_block)))
+
+                    print("\n=============== check right branch ==================")
+                    for rbidx in xrange(len(right_branch_blocks_only_before_reorg)):
+                        right_block = right_branch_blocks_only_before_reorg[rbidx]
+                        print("%d\t%s" % (rbidx, str(right_block)))
+
+                    master_nd_right_branch_blocks = master_branch_blocks + right_branch_blocks_only_before_reorg
+                    # Seach stride value for master and right branches
+                    for mridx in xrange(len(master_nd_right_branch_blocks)):
+                        mrblock = master_nd_right_branch_blocks[mridx]
+                        print(mridx, mrblock['type'])
+                        if mrblock['type'] == "convolutional" or \
+                           mrblock['type'] == "maxpool" or \
+                           mrblock['type'] == "avgpool":
+                            stride = mrblock['stride']
                             stride_list.append(int(stride))
 
                         # input channels of reorg layer
-                        if blocks[bbidx]['type'] == "convolutional":
-                            reorg_input_filter_num = int(blocks[bbidx]['filters'])
+                        if mrblock['type'] == "convolutional":
+                            reorg_input_filter_num = int(mrblock['filters'])
                     print("stride_list:%s" % str(stride_list))
                     print("reorg_input_filter_num:%d" % reorg_input_filter_num)
                     # step3: compute input dimension of reorg layer
+                    print("[step3] compute input dimension of reorg layer")
                     stride_factor = reduce(lambda a, b: a*b, stride_list)
                     print("stride_factor:%d" % stride_factor)
                     input_h = int(blocks[0]['height'])/stride_factor
@@ -460,7 +511,7 @@ def cfg2prototxt(cfgfile):
                     shape['dim'] = [batch_num, out_c, out_h, out_w]
                     print(shape['dim']) 
                 else:
-                    print("reorg layer error: block['route'] before block['reorg'] has two routes")
+                    print("reorg layer error: first route block has more than one from-layers")
                     exit(-1)
 
             else:
