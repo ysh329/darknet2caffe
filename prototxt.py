@@ -189,6 +189,129 @@ def save_prototxt(net_info, protofile, region=True):
     fp.close()
 
 
+
+def correct_pooling_layer(cfgfile, protofile):
+    # TODO TODO TODO
+    # create a pool idx list for those pool with kernel_size=2 stride=1
+    #     to record those sepcial pool's index in **all pool layers**
+    #     this recorded pool index list is used to avoid conversion for original ksize=1,stride=1 pool
+    #
+    # special case pool: input shape same as output shape
+    #     only for pool with stride=1 kernel_size=2
+    #     during conversion from cfg to protofile
+    #     kernel_size=2 changed to 1
+    #     here kernel_size will change back to 2
+
+    # init result
+    with open(protofile, "r") as proto_handle:
+        correct_proto_line_list = proto_handle.readlines()
+
+    # step1. filter all pool in cfg file
+    print("==== cfg ====")
+    with open(cfgfile, "r") as cfg_handle:
+        cfg_lines_str = cfg_handle.read()
+
+        import re
+        pool_size_pattern = re.compile(r"\[.*pool\]\nsize=(\d)\n", re.M)
+        pool_stride_pattern = re.compile(r"\[.*pool\]\nsize=\d\nstride=(\d)", re.M)
+        pool_size_list = re.findall(pool_size_pattern, cfg_lines_str)
+        pool_stride_list = re.findall(pool_stride_pattern, cfg_lines_str)
+        print("pool_size_list:%s" % str(pool_size_list))
+        print("pool_stride_list:%s" % str(pool_stride_list))
+        # find pool
+    pool_size_and_stride_tuple_list_cfg = map(lambda size, stride:
+                                               (size, stride),
+                                              pool_size_list, pool_stride_list)
+    # step2. filter all pool in prototxt file
+    print("==== prototxt ====")
+    with open(protofile, "r") as proto_handle:
+        proto_lines_str = proto_handle.read()
+        import re
+        pool_kernel_size_pattern = re.compile(r"pooling_param {\n        kernel_size: (\d)\n", re.M)
+        pool_stride_pattern = re.compile(r"pooling_param {\n        kernel_size: .*\n        stride: (\d)\n", re.M)
+        pool_kernel_size_list = re.findall(pool_kernel_size_pattern, proto_lines_str)
+        pool_stride_list = re.findall(pool_stride_pattern, proto_lines_str)
+        print("pool_kernel_size_list:%s" % str(pool_kernel_size_list)) 
+        print("pool_stride_list:%s" % str(pool_stride_list))
+    pool_kernel_size_and_stride_tuple_list_proto = map(lambda kernel_size, stride:
+                                                              (kernel_size, stride),
+                                                       pool_kernel_size_list, pool_stride_list)
+    # step3. compare pools between cfg and prototxt file
+    if len(pool_kernel_size_and_stride_tuple_list_proto) == \
+       len(pool_size_and_stride_tuple_list_cfg):
+
+        for pool_idx in xrange(len(pool_size_and_stride_tuple_list_cfg)):
+            cfg_pool = pool_size_and_stride_tuple_list_cfg[pool_idx]
+            proto_pool = pool_kernel_size_and_stride_tuple_list_proto[pool_idx]
+
+            # prototxt pool
+            ksize_proto = proto_pool[0]
+            stride_proto = proto_pool[1]
+            # cfg pool
+            ksize_cfg = cfg_pool[0]
+            stride_cfg = cfg_pool[1]
+
+            # compare pool from cfg and protofile
+            if (ksize_proto == ksize_cfg) and \
+               (stride_proto == stride_cfg):
+                continue
+                # same pool with same stride and kernel size
+            else:
+                print("==== replace ====")
+                print("index %s's pool from cfg and proto are different" % str(pool_idx))
+                print("cfg pool with stride=%s ksize=%s" % (stride_cfg, ksize_cfg))
+                print("prototxt pool with stride=%s ksize=%s" % (stride_proto, ksize_proto))
+
+                # step4. replace the target pool with cfg pool
+                target_pool_idx = pool_idx
+                with open(protofile, "r") as proto_handle:
+                    proto_line_list = proto_handle.readlines()
+                    idx_and_line_tuple_list = map(lambda line_idx, line: \
+                                                         (line_idx, line), \
+                                                  xrange(len(proto_line_list)), proto_line_list)
+                    print("idx_and_line_tuple_list[0]:%s" % str(idx_and_line_tuple_list[0]))
+                    print("type(idx_and_line_tuple_list):%s" % type(idx_and_line_tuple_list))
+                    poolStartIdx_and_line_tuple_list = filter(lambda (line_idx, line): \
+                                                                     'pooling_param' in line, \
+                                                                     idx_and_line_tuple_list)
+                    print("poolStartIdx_and_line_tuple_list:%s" % str(poolStartIdx_and_line_tuple_list))
+                    # target pool line found
+                    target_pool_line_idx = int(poolStartIdx_and_line_tuple_list[target_pool_idx][0])
+                    print("target_pool_line_idx:%d" % target_pool_line_idx)
+                    target_ksize_and_stride_str = "".join([proto_line_list[target_pool_line_idx+1],\
+                                                           proto_line_list[target_pool_line_idx+2]])
+                    print("proto_line_list[target_pool_line_idx+1]:%s" % proto_line_list[target_pool_line_idx+1])
+                    print("proto_line_list[target_pool_line_idx+2]:%s" % proto_line_list[target_pool_line_idx+2])
+                    ksize_pattern = r".*kernel_size: (\d)\n"
+                    stride_pattern = r".*stride: (\d)\n"
+                    try:
+                        import re
+                        ksize = re.findall(ksize_pattern, target_ksize_and_stride_str)[0]
+                        stride = re.findall(stride_pattern, target_ksize_and_stride_str)[0]
+                        print("==== proto before replace ====")
+                        print("ksize:%s" % ksize)
+                        print("stride:%s" % stride)
+                    except:
+                        print("[ERROR] no ksize or stride param(s) found in prototxt")
+                        exit(-1)
+                    # replace
+                    ksize_proto_line_str = "        kernel_size: {}\n".format(ksize_cfg)
+                    stride_proto_line_str = "        stride: {}\n".format(stride_cfg)
+                    print("==== check replace ====")
+                    print("ksize_proto_line_str:%s" % ksize_proto_line_str)
+                    print("stride_proto_line_str:%s" % stride_proto_line_str)
+                    print("len(correct_proto_line_list)):%s" % len(correct_proto_line_list))
+                    correct_proto_line_list[target_pool_line_idx+1] = ksize_proto_line_str
+                    correct_proto_line_list[target_pool_line_idx+2] = stride_proto_line_str
+        print("==== finish ====")
+    else:
+        print("[ERROR] the number of pools from cfg differs from the number of the one from prototxt")
+        exit(-1)
+    # step5. save prototxt result
+    with open(protofile, "w") as proto_handle:
+        proto_handle.writelines(correct_proto_line_list)
+        
+
 def format_data_layer(protofile):
     model_name_pattern = '(.*)\..*'
     dim_pattern = 'input_dim: (.*)'

@@ -210,6 +210,19 @@ def cfg2prototxt(cfgfile):
             pooling_param = OrderedDict()
             pooling_param['kernel_size'] = block['size']
             pooling_param['stride'] = block['stride']
+
+            # [special case] for stride=1 kernel_size=2 maxpool
+            #                change kernel_size=2 to kernel_size=1
+            #                after this convertor
+            #                change back from kernel_size=1 to kernel_size=2
+            if pooling_param['kernel_size'] == "2" and \
+               pooling_param['stride'] == '1':
+                print("blocks{} is a special pooling, stride={}, kernel_size={}" \
+                      .format(bidx, \
+                              pooling_param['stride'], \
+                              pooling_param['kernel_size']))
+                pooling_param['kernel_size'] = "1"
+
             pooling_param['pool'] = 'MAX'
             if block.has_key('pad') and int(block['pad']) == 1:
                 pooling_param['pad'] = str((int(block['size'])-1)/2)
@@ -560,3 +573,4 @@ if __name__ == '__main__':
 
     darknet2caffe(cfgfile, weightfile, protofile, caffemodel)
     format_data_layer(protofile)
+    correct_pooling_layer(cfgfile, protofile)

@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     darknet2caffe(cfg_file, weights_file, prototxt_file, caffemodel_file)
     format_data_layer(prototxt_file)
-
+    correct_pooling_layer(cfg_file, prototxt_file)
     #########################################################
     # Step2. convert to InferXLite's *.c, *.h, *.dat files  #
     #        from Caffe                                     #

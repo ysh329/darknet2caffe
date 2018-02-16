@@ -48,5 +48,5 @@ python cfg.py DARKNET_CFG
 - [x] darknet2inferx
    - [x] support converison of region layer's parameters to variables in `*.h` file.
    - [ ] support `yolo_pooling` judge/choose in pooling conversion from caffe to inferxlite [DELAY]
-- [ ] darknet2caffe
-   - [ ] support conversion of **pooling layer** for special cases (stride=1 pooling, decimal value)
+- [x] darknet2caffe
+   - [x] support conversion of **pooling layer** for a special case (input shape same as output shape. More concretely, stride=1 size=2 max pooling, this case's process of darknet will pad 1 for right and down side of input feature map. Thus, this conversion replaces `stride=1 size=2` with `stride=1 size=1` before `cfg2proto`. After conversion from `weights` to `caffemodel`, an afterward process'll replace pooling setting in cfg file using ground truth params (stride and size) in cfg file).
