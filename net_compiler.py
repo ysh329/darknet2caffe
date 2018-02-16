@@ -669,7 +669,7 @@ class BatchNorm(Layer):
         Layer.__init__(self, layer_string,net_name)
         self.use_global_stats = 'true'
         self.moving_average_fraction = ['0.999']
-        self.eps = ['1e-5']
+        self.eps = ['1e-9']
 
         self.__init_decimal_param__(self.__phases_decimal)
         self.__init_binary_param__(self.__phases_binary[0], default='true')
