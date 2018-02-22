@@ -243,7 +243,7 @@ if __name__ == '__main__':
     import sys
     if len(sys.argv) != 2:
         print('Usage: python cfg.py model.cfg')
-        exit()
+        exit(-1)
 
     blocks = parse_cfg(sys.argv[1])
     print_cfg_nicely(blocks)
