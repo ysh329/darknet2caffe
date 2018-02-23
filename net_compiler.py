@@ -389,19 +389,20 @@ class Convolution(Layer):
         self.stride_w = self.stride
         self.pad_h = self.pad
         self.pad_w = self.pad
+        self.activation_type = 0
 
     def __interface_c__(self):
         self.interface_criterion = \
             "Convolution(int num_input,int num_output,int kernel_h,int kernel_w,int stride_h," \
             "int stride_w,int pad_h,int pad_w,int group,int dilation,int axis," \
-            "bool bias_term,bool force_nd_im2col,char *bottom,char *top, char *name)"
+            "bool bias_term,bool force_nd_im2col,char *bottom,char *top, char *name, int activation_type)"
         self.interface_c = "inferx_convolution("
         self.interface_c += "{},{},{},{},{},{},{},{}".\
             format(self.num_input,self.num_output,self.kernel_h,self.kernel_w,
                    self.stride_h,self.stride_w,self.pad_h,self.pad_w)
         self.interface_c += ",{},{},{}".format(self.group,self.dilation,self.axis)
         self.interface_c += ",{},{}".format(self.bias_term,self.force_nd_im2col)
-        self.interface_c += ",\"{}\",\"{}\",\"{}\",{},{});".format(self.bottom_layer[0].top,self.top,self.name,Layer.modelstr,Layer.datastr)
+        self.interface_c += ",\"{}\",\"{}\",\"{}\",{},{},{});".format(self.bottom_layer[0].top,self.top,self.name,Layer.modelstr,Layer.datastr, self.activation_type)
 
     def __calc_ioput__(self):
         self.num_input = self.bottom_layer[0].num_output
