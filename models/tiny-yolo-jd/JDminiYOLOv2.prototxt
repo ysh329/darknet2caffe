@@ -1,8 +1,18 @@
-input: "data"
-input_dim: 1
-input_dim: 3
-input_dim: 480
-input_dim: 640
+name: "JDminiYOLOv2"
+
+layer {
+  name: "data"
+  type: "Input"
+  top: "data"
+  input_param {
+    shape {
+      dim: 1
+      dim: 3
+      dim: 480
+      dim: 640
+    }    
+  }
+}
 
 layer {
     name: "layer1-conv"
@@ -435,5 +445,33 @@ layer {
         pad: 0
         stride: 1
         bias_term: true
+    }
+}
+layer {
+    name: "layer20-region"
+    type: "Region"
+    bottom: "layer19-conv"
+    top: "layer20-region"
+    region_param {
+        anchors: "1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52"
+        classes: 2
+        bias_match: 1
+        coords: 4
+        num: 5
+        softmax: 1
+        jitter: .2
+        rescore: 1
+        object_scale: 5
+        noobject_scale: 1
+        class_scale: 1
+        coord_scale: 1
+        absolute: 1
+        thresh: .6
+        random: 0
+        nms_thresh: 0.3
+        background: 0
+        tree_thresh: 0.5
+        relative: 1
+        box_thresh: 0.24
     }
 }
