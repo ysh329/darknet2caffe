@@ -191,7 +191,6 @@ def save_prototxt(net_info, protofile, region=True):
 
 
 def correct_pooling_layer(cfgfile, protofile):
-    # TODO TODO TODO
     # create a pool idx list for those pool with kernel_size=2 stride=1
     #     to record those sepcial pool's index in **all pool layers**
     #     this recorded pool index list is used to avoid conversion for original ksize=1,stride=1 pool
@@ -210,6 +209,8 @@ def correct_pooling_layer(cfgfile, protofile):
     print("==== cfg ====")
     with open(cfgfile, "r") as cfg_handle:
         cfg_lines_str = cfg_handle.read()
+        cfg_lines_str = cfg_lines_str.replace("\r", "")
+        print("cfg_lines_str[:10]:%s" % cfg_lines_str[:10])
 
         import re
         pool_size_pattern = re.compile(r"\[.*pool\]\nsize=(\d)\n", re.M)
@@ -226,6 +227,8 @@ def correct_pooling_layer(cfgfile, protofile):
     print("==== prototxt ====")
     with open(protofile, "r") as proto_handle:
         proto_lines_str = proto_handle.read()
+        proto_lines_str = proto_lines_str.replace("\r", "")
+        print("proto_lines_str[:10]:%s" % proto_lines_str[:10])
         import re
         pool_kernel_size_pattern = re.compile(r"pooling_param {\n        kernel_size: (\d)\n", re.M)
         pool_stride_pattern = re.compile(r"pooling_param {\n        kernel_size: .*\n        stride: (\d)\n", re.M)

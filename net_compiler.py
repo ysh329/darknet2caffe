@@ -896,7 +896,7 @@ class Reshape(Layer):
 
     def __calc_ioput__(self):
         self.num_input = self.bottom_layer[0].num_output
-        self.num_output = self.num_input
+        self.num_output = self.channels
 
     def __interface_c__(self):
         self.interface_criterion = \
@@ -1212,7 +1212,7 @@ def parse_network_input(prototxt_file):
         dim_list = re.findall(dim_pattern, prototxt_content)
         dim_list = map(int, dim_list)
 
-        var_name_list = ["input_batch_size", "input_channel", "input_height", "input_width"]
+        var_name_list = ["input_batch_size", "input_channel", "input_width", "input_height"]
         dim_c_code_line_list = map(lambda var, var_name: \
                                           var_from_py_to_c(var, var_name), \
                                    dim_list[:len(var_name_list)], var_name_list)

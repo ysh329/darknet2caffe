@@ -73,11 +73,13 @@ def save_caffemodel_data(model_layer, model_name):
     """ write  the number of layer has blob into file """
     fo.write( (100 - len(str(item_num)))*' ' + str(item_num)+'\n')
     
-    for item in model_layer:
+    for item_idx in xrange(len(model_layer)):
+        item = model_layer[item_idx]
         blobs=item.blobs
         if(len(blobs)>0):
             fo.write(item.name + ' ')
 	    shape_data = get_shape_data(blobs)
+            print("{}\t{}".format(item_idx, str(shape_data)))
             for meta_data in shape_data:
                 fo.write(str(meta_data) +' ')
 	    for blob in blobs:
