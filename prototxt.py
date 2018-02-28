@@ -304,8 +304,11 @@ def correct_pooling_layer(cfgfile, protofile):
                     print("ksize_proto_line_str:%s" % ksize_proto_line_str)
                     print("stride_proto_line_str:%s" % stride_proto_line_str)
                     print("len(correct_proto_line_list)):%s" % len(correct_proto_line_list))
+                    # special pad for inferxlite's pooling_yolo layer
+                    #     only for this special stride=1 pooling
+                    pad_proto_line_str = "        pad: {}\n".format("1")
                     correct_proto_line_list[target_pool_line_idx+1] = ksize_proto_line_str
-                    correct_proto_line_list[target_pool_line_idx+2] = stride_proto_line_str
+                    correct_proto_line_list[target_pool_line_idx+2] = "".join([stride_proto_line_str, pad_proto_line_str])
         print("==== finish ====")
     else:
         print("[ERROR] the number of pools from cfg differs from the number of the one from prototxt")

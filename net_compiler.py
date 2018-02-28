@@ -482,6 +482,8 @@ class Pooling(Layer):
                 "inferx_pooling(int kernel_h,int kernel_w,int stride_h,int stride_w,int pad_h," \
                 "int pad_w,enum PoolMethod pool,char *bottom,char *top,char *name)"
             self.interface_c = "inferx_pooling("
+            if (str(self.stride_h) == "1") and (str(self.stride_w) == "1"):
+                self.interface_c = "inferx_pooling_yolo("          
             self.interface_c += "{},{},{},{},{},{},". \
                 format(self.kernel_h,self.kernel_w,
                        self.stride_h,self.stride_w,self.pad_h,self.pad_w)
